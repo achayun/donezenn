@@ -1,0 +1,17 @@
+# Section name → key in our logic
+section_headers:
+    "TODO": "TODO"
+    "+ Done": "DONE"
+    "* Won't Do": "WONTDO"
+    "<> In Progress": "INPROGRESS"
+    "-> Delegated": "DELEGATED"
+
+# Checkbox symbol → target section
+groups:
+    " ": "TODO"
+    "x": "DONE"
+    "+": "DONE"
+    "*": "WONTDO"
+    "!": "WONTDO"
+    "<>": "INPROGRESS"
+    "->": "DELEGATED"
