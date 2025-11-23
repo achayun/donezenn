@@ -1,4 +1,5 @@
 # Section name → key in our logic
+# TODO: Remove, the only thing relevant is the prefix
 section_headers:
     "TODO": "TODO"
     "+ Done": "DONE"
