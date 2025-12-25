@@ -1,20 +1,4 @@
 # TODO
-- [ ] Remove section headers, it's redundant. We can deduce from groups
-- [ ] Check that section exists before moving to it
-- [ ] Allow any headers to be in "TODO" state, and when moving, take the headers convert them to tags and add to the item (if not already tagged. Example
-      ```
-      # TODO
-      ## Home
-      - [ ] Fix leak
-      # + Done
-      ```
-      When done becomes
-      ```
-      # TODO
-      ## Home
-      # + Done
-      - [+] Fix leak [Home]
-      ```
 - [ ] Create a planner.md view from todo.md:
       If tasks have TBD with date and range say:
       ```
