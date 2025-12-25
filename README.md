@@ -26,8 +26,9 @@ python3 ../donezenn/install_hooks.py
 Donezenn will track any Markdown files about to be committed (looking at extension.md). Tracking any item with checkbox in a bullet list e.g.
 
 ```
-# TODO
-- [ ] Some task
+# Home
+- [ ] Some house chore
+- [ ] Another task
 
 # [+] Done
 
@@ -35,10 +36,11 @@ Donezenn will track any Markdown files about to be committed (looking at extensi
 
 Changing status will be moved to sections with appropriate decorator. For example, setting the task as [+] will move to the section Done
 ```
-# TODO
-- [ ] Some task
+# Home
+- [ ] Another task
 
 # [+] Done
+- [+] Some house chore [Home]
 
 ```
 

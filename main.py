@@ -67,19 +67,20 @@ def get_staged_files():
     )
     return result.stdout.strip().splitlines()
 
+def map_headers_with_status(tokens):
+    status_headers = defaultdict()
+    for token, status, header in iter_tokens_with_section(tokens):
+        if token.type == "heading_open" and status:
+            status_headers[status] = header
+    return status_headers
+
 def process_md(file_name):
     with open(file_name, "r", encoding="utf-8") as f:
         content = f.read()
 
     # - 1st phase: Parse the md file as Markdown
-    # Initialize AST parser
     tokens = md.parse(content)
-
-    # --- First pass: Map headers with status
-    status_headers = defaultdict()
-    for token, status, header in iter_tokens_with_section(tokens):
-        if token.type == "heading_open" and status:
-            status_headers[status] = header
+    status_headers = map_headers_with_status(tokens)
 
     tasks_to_add = defaultdict(list)
     line_ranges_to_remove = []

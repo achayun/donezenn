@@ -3,7 +3,7 @@
 Donezenn tracks markdown files (by extension .md) to automate common actions such as state changes.
 The structure of a TODO file is built around Markdown check boxes.
 
-A task list can be defined by using a bullet with check box:
+A task list can be defined by using a unnumbered list with check box:
 ```
 - [ ] Task
 ```
