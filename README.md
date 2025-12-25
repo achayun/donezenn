@@ -1,9 +1,6 @@
 # donezenn
 A simple Markdown + git hooks driven TODO
 
-## Configuration
-The repo comes preconfigured with default section headers and actions, feel free to override and set your own
-
 ## Installation
 
 First, clone the code. e.g.
@@ -21,24 +18,30 @@ touch todo.md
 
 Install the git hooks into the todo repo
 ```
+cd todo
 python3 ../donezenn/install_hooks.py
 ```
 
 ## Usage
-The todo.md file is expected to have the following structure dictated by the config.yaml file which can be customized.
+Donezenn will track any Markdown files about to be committed (looking at extension.md). Tracking any item with checkbox in a bullet list e.g.
 
 ```
 # TODO
-- [ ] Something I should not forget [TBD:tomorrow]
+- [ ] Some task
 
-# + Done
-- [+] Done already
+# [+] Done
 
-# -> Delegated
-- [->] Do something really hard
 ```
 
-Each header describes a state of an item, which is defined by its symbol in the prefix. Take a look at config.yaml at the default states. The system automates some common tasks using git hooks:
-1. When a state is changed by setting the symbol in the checkbox, a pre-commit hook will move it to the relevant section (if one exists)
-2. If a relative date is detected, it will change to normalized ISO date
-3. A commit message with the actions will be prepared
+Changing status will be moved to sections with appropriate decorator. For example, setting the task as [+] will move to the section Done
+```
+# TODO
+- [ ] Some task
+
+# [+] Done
+
+```
+
+Each header with decorator describes a state of an item, which is defined by its symbol in the prefix. More details are in spec.md
+
+Templates with examples can be found in the templates folder
