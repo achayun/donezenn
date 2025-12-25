@@ -39,6 +39,26 @@ def replace_tbd(match) -> str:
 def normalize_tbd_tags(line: str) -> str:
     return re.sub(r"\[(TBD):\s*([^\]]+)\s*\]", replace_tbd, line)
 
+def iter_tokens_with_section(tokens):
+    current_section_status = None
+    current_section = None
+
+    it = iter(tokens)
+
+    for token in it:
+        if token.type == "heading_open":
+            next_token = next(it)  # consume the heading content token
+            heading_text = next_token.content.strip()
+
+            m = re.match(r"^\s*\[([^\]]*)\]\s*(.*)", heading_text)
+            if m:
+                current_section_status, current_section = m.groups()
+            else:
+                current_section_status = None
+                current_section = heading_text
+
+        yield token, current_section_status, current_section
+
 def get_staged_files():
     result = subprocess.run(
         ["git", "diff", "--cached", "--name-only"],
@@ -57,34 +77,16 @@ def process_md(file_name):
 
     # --- First pass: Map headers with status
     status_headers = defaultdict()
-    for i, token in enumerate(tokens):
-        if token.type == "heading_open":
-            next_token = tokens[i + 1]
-            heading_text = next_token.content.strip()
-            status_heading = re.match(r"^\s*\[([^\]]*)\]\s*(.*)", heading_text)
-            if status_heading:
-                current_section_status, current_section = status_heading.groups()
-                status_headers[current_section_status] = current_section
+    for token, status, header in iter_tokens_with_section(tokens):
+        if token.type == "heading_open" and status:
+            status_headers[status] = header
 
     tasks_to_add = defaultdict(list)
     line_ranges_to_remove = []
 
     # --- First pass: Find tasks with changed status ---
-    #TODO: Refactor to yielding iterator so the current_section state finder can be reused later
-    current_section = None
-    current_section_status = None
-    for i, token in enumerate(tokens):
-        if token.type == "heading_open":
-            next_token = tokens[i + 1]
-            heading_text = next_token.content.strip()
-            status_heading = re.match(r"^\s*\[([^\]]*)\]\s*(.*)", heading_text)
-            if status_heading:
-                current_section_status, current_section = status_heading.groups()
-            else:
-                current_section_status = None
-                current_section = heading_text
-
-        elif token.type == "inline":
+    for token, current_section_status, current_section in iter_tokens_with_section(tokens):
+        if token.type == "inline":
             task = re.match(r"^\s*\[([^\]]*)\]\s+(.*)", token.content)
             if task:
                 status, task_text = task.groups()
@@ -100,8 +102,6 @@ def process_md(file_name):
                     line_ranges_to_remove.append(token.map)
 
                     log_moves.append(f"{current_section} -> {status_headers[status]}: {task_text}")
-                    print(log_moves[-1])
-
 
     # - 2nd phase: Line based processing to update the file
     lines = content.splitlines()
@@ -118,19 +118,8 @@ def process_md(file_name):
     tokens = md.parse(content)
 
     section_lines = {}
-    current_section = None
-    current_section_status = None
-    for i, token in enumerate(tokens):
-        if token.type == "heading_open":
-            next_token = tokens[i + 1]
-            heading_text = next_token.content.strip()
-            status_heading = re.match(r"^\s*\[([^\]]*)\]\s*(.*)", heading_text)
-            if status_heading:
-                current_section_status, current_section = status_heading.groups()
-            else:
-                current_section_status = None
-                current_section = heading_text
-            if current_section_status and token.map:
+    for token, current_section_status, current_section in iter_tokens_with_section(tokens):
+        if token.type == "heading_open" and current_section_status and token.map:
                 section_lines[current_section_status] = token.map[1]
 
     # --- Add moved tasks to new sections, reverse iterate so the line numbers are always coherent ---
