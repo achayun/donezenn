@@ -61,7 +61,7 @@ def iter_tokens_with_section(tokens):
 
 def get_staged_files():
     result = subprocess.run(
-        ["git", "diff", "--cached", "--name-only"],
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=d"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, check=True,
     )
@@ -93,9 +93,10 @@ def process_md(file_name):
                 status, task_text = task.groups()
                 if status and status != current_section_status and status in status_headers:
                     task_content = token.content
-                    # Add the section header text as a tag to the task, if not there
+                    # Add the section header text as a tag to the task, if not there. Use standard #hashtag syntax
                     if current_section and not re.match(rf".*\[\s*{re.escape(current_section)}\s*\].*", task_content):
-                        task_content+= f" [{current_section}]"
+                        current_section_tag = re.sub(' ', '_', current_section)
+                        task_content+= f" #{current_section_tag}"
                     # Mark lines to be added under new status sections
                     tasks_to_add[status].append("- " + task_content)
 
