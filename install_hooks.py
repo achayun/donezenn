@@ -15,7 +15,7 @@ def main():
     hooks_dir = git_dir / "hooks"
     hooks_dir.mkdir(exist_ok=True)
 
-    tool_root = Path(__file__).parent.resolve()
+    tool_root = Path(__file__).parent.resolve() / "hooks"
 
     hook_map = {
         "pre-commit": tool_root / "pre-commit.sh",

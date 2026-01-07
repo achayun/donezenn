@@ -12,8 +12,8 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 # -----------------------------------------------------
 
 VENV_DIR="$SCRIPT_DIR/.venv"
-REQ_FILE="$SCRIPT_DIR/requirements.txt"
-ENTRYPOINT="$SCRIPT_DIR/main.py"
+REQ_FILE="$SCRIPT_DIR/../requirements.txt"
+ENTRYPOINT="$SCRIPT_DIR/../main.py"
 
 # 1. Create venv if it doesn't exist
 if [[ ! -d "$VENV_DIR" ]]; then

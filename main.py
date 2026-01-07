@@ -70,7 +70,7 @@ def get_staged_files():
 def map_headers_with_status(tokens):
     status_headers = defaultdict()
     for token, status, header in iter_tokens_with_section(tokens):
-        if token.type == "heading_open" and status:
+        if status and header:
             status_headers[status] = header
     return status_headers
 
