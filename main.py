@@ -91,7 +91,7 @@ def headers_to_tags(task, headers):
     if headers:
         # Add the section header text as a tag to the task, if not there. Use standard #hashtag syntax
         for header in [h for h in headers if h]:
-            header_tag = f"#{re.sub('[^\w]+', '_', header)}"
+            header_tag = f"#{re.sub('[^\w-]+', '_', header)}"
             if not re.search(rf"{re.escape(header_tag)}", task):
                 new_tags.append(header_tag)
     return new_tags
