@@ -39,9 +39,21 @@ def replace_tbd(match) -> str:
 def normalize_tbd_tags(line: str) -> str:
     return re.sub(r"\[(TBD):\s*([^\]]+)\s*\]", replace_tbd, line)
 
+def header_breadcrumbs(heading_token, heading_text_token, heading_stack):
+    level = int(heading_token.tag[1])
+    title_text = heading_text_token.content
+
+    # Pop the stack. Remove any headers from the stack that are deeper than (or equal to) the current level.
+    updated_stack = [h for h in heading_stack if h['level'] < level]
+
+    # Push the current header to stack
+    updated_stack.append({'level': level, 'text': title_text})
+    return updated_stack
+
 def iter_tokens_with_section(tokens):
     current_section_status = None
     current_section = None
+    breadcrumbs = []
 
     it = iter(tokens)
 
@@ -56,8 +68,8 @@ def iter_tokens_with_section(tokens):
             else:
                 current_section_status = None
                 current_section = heading_text
-
-        yield token, current_section_status, current_section
+            breadcrumbs = header_breadcrumbs(token, next_token, breadcrumbs)
+        yield token, current_section_status, current_section, breadcrumbs
 
 def get_staged_files():
     result = subprocess.run(
@@ -69,10 +81,20 @@ def get_staged_files():
 
 def map_headers_with_status(tokens):
     status_headers = defaultdict()
-    for token, status, header in iter_tokens_with_section(tokens):
+    for token, status, header, breadcrumbs in iter_tokens_with_section(tokens):
         if status and header:
             status_headers[status] = header
     return status_headers
+
+def headers_to_tags(task, headers):
+    new_tags = []
+    if headers:
+        # Add the section header text as a tag to the task, if not there. Use standard #hashtag syntax
+        for header in [h for h in headers if h]:
+            header_tag = f"#{re.sub(' ,', '_', header)}"
+            if not re.search(rf"{re.escape(header_tag)}", task):
+                new_tags.append(header_tag)
+    return new_tags
 
 def process_md(file_name):
     with open(file_name, "r", encoding="utf-8") as f:
@@ -86,19 +108,17 @@ def process_md(file_name):
     line_ranges_to_remove = []
 
     # --- First pass: Find tasks with changed status ---
-    for token, current_section_status, current_section in iter_tokens_with_section(tokens):
+    for token, current_section_status, current_section, breadcrumbs in iter_tokens_with_section(tokens):
         if token.type == "inline":
             task = re.match(r"^\s*\[([^\]]*)\]\s+(.*)", token.content)
             if task:
                 status, task_text = task.groups()
                 if status and status != current_section_status and status in status_headers:
-                    task_content = token.content
-                    # Add the section header text as a tag to the task, if not there. Use standard #hashtag syntax
-                    if current_section and not re.match(rf".*\[\s*{re.escape(current_section)}\s*\].*", task_content):
-                        current_section_tag = re.sub(' ', '_', current_section)
-                        task_content+= f" #{current_section_tag}"
+                    tags = headers_to_tags(task_text, [h['text'] for h in breadcrumbs])
+                    task_text += ' ' + ' '.join(tags) if len(tags) else ""
+
                     # Mark lines to be added under new status sections
-                    tasks_to_add[status].append("- " + task_content)
+                    tasks_to_add[status].append("- [" + status + "] " + task_text)
 
                     # Mark the line to be removed
                     line_ranges_to_remove.append(token.map)
@@ -120,7 +140,7 @@ def process_md(file_name):
     tokens = md.parse(content)
 
     section_lines = {}
-    for token, current_section_status, current_section in iter_tokens_with_section(tokens):
+    for token, current_section_status, current_section, breadcrumbs in iter_tokens_with_section(tokens):
         if token.type == "heading_open" and current_section_status and token.map:
                 section_lines[current_section_status] = token.map[1]
 
@@ -146,3 +166,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    exit(-1)
