@@ -39,15 +39,14 @@ def replace_tbd(match) -> str:
 def normalize_tbd_tags(line: str) -> str:
     return re.sub(r"\[(TBD):\s*([^\]]+)\s*\]", replace_tbd, line)
 
-def header_breadcrumbs(heading_token, heading_text_token, heading_stack):
+def header_breadcrumbs(heading_token, heading_text, heading_stack):
     level = int(heading_token.tag[1])
-    title_text = heading_text_token.content
 
     # Pop the stack. Remove any headers from the stack that are deeper than (or equal to) the current level.
     updated_stack = [h for h in heading_stack if h['level'] < level]
 
     # Push the current header to stack
-    updated_stack.append({'level': level, 'text': title_text})
+    updated_stack.append({'level': level, 'text': heading_text})
     return updated_stack
 
 def iter_tokens_with_section(tokens):
@@ -60,15 +59,14 @@ def iter_tokens_with_section(tokens):
     for token in it:
         if token.type == "heading_open":
             next_token = next(it)  # consume the heading content token
-            heading_text = next_token.content.strip()
-
+            heading_text = next_token.content.strip() # Heading text including an optional status checkbox e.g. # [+] Done
             m = re.match(r"^\s*\[([^\]]*)\]\s*(.*)", heading_text)
             if m:
                 current_section_status, current_section = m.groups()
             else:
                 current_section_status = None
                 current_section = heading_text
-            breadcrumbs = header_breadcrumbs(token, next_token, breadcrumbs)
+            breadcrumbs = header_breadcrumbs(token, current_section, breadcrumbs)
         yield token, current_section_status, current_section, breadcrumbs
 
 def get_staged_files():
