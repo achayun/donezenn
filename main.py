@@ -79,10 +79,13 @@ def get_staged_files():
 
 def map_headers_with_status(tokens):
     status_headers = defaultdict()
+    plain_headers = []
     for token, status, header, breadcrumbs in iter_tokens_with_section(tokens):
         if status and header:
             status_headers[status] = header
-    return status_headers
+        elif token.type == "heading_open":
+            plain_headers.append(tuple(h['text'] for h in breadcrumbs))
+    return status_headers, plain_headers
 
 def headers_to_tags(task, headers):
     new_tags = []
@@ -100,7 +103,7 @@ def process_md(file_name):
 
     # - 1st phase: Parse the md file as Markdown
     tokens = md.parse(content)
-    status_headers = map_headers_with_status(tokens)
+    status_headers, plain_headers = map_headers_with_status(tokens)
 
     tasks_to_add = defaultdict(list)
     line_ranges_to_remove = []
@@ -122,6 +125,14 @@ def process_md(file_name):
                     line_ranges_to_remove.append(token.map)
 
                     log_moves.append(f"{current_section} -> {status_headers[status]}: {task_text}")
+                elif current_section_status and not status.strip():
+                    # Unchecked (i.e. `- [ ]` task inside a status section moves back to the most specific header it is tagged with
+                    matches = [p for p in plain_headers if not headers_to_tags(task_text, p[-1:])]
+                    if matches:
+                        target = max(matches, key=lambda p: (len(p) - len(headers_to_tags(task_text, p)), len(p)))
+                        tasks_to_add[target].append("- [ ] " + task_text)
+                        line_ranges_to_remove.append(token.map)
+                        log_moves.append(f"{current_section} -> {target[-1]}: {task_text}")
 
     # - 2nd phase: Line based processing to update the file
     lines = content.splitlines()
@@ -139,8 +150,8 @@ def process_md(file_name):
 
     section_lines = {}
     for token, current_section_status, current_section, breadcrumbs in iter_tokens_with_section(tokens):
-        if token.type == "heading_open" and current_section_status and token.map:
-                section_lines[current_section_status] = token.map[1]
+        if token.type == "heading_open" and token.map:
+            section_lines.setdefault(current_section_status or tuple(h['text'] for h in breadcrumbs), token.map[1])
 
     # --- Add moved tasks to new sections, reverse iterate so the line numbers are always coherent ---
     for section, insert_at in sorted(section_lines.items(), key=lambda x: x[1], reverse=True):
